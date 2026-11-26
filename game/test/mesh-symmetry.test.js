@@ -13,7 +13,7 @@
 //   3. No culling hole. From the chase camera the aircraft is seen from behind and above, so both
 //      wing upper surfaces must survive the backface test. The original bug culled exactly one.
 
-import { PANELS } from '../src/aircraftMesh.js';
+import { PANELS } from '../src/aircraft.js';
 
 let failures = 0;
 let checks = 0;

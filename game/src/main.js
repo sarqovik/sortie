@@ -2,13 +2,9 @@
 // screenshot script asks for. A scene flies the real mission with the autopilot and then holds the
 // frame, so what the screenshot shows is a moment of a sortie that actually ran.
 
-import { STEP, VIEW, WORLD, AIRCRAFT } from './config.js';
-import { flyFor } from './autopilot.js';
-import { drawHud } from './hud.js';
-import { createInput } from './input.js';
-import { PHASE, createMission, nextRing, stepMission } from './mission.js';
-import { createRenderer } from './render.js';
-import { groundHeight, scatterProps } from './terrain.js';
+import { STEP, VIEW, WORLD, AIRCRAFT, createInput } from './core.js';
+import { PHASE, createMission, flyFor, groundHeight, nextRing, scatterProps, stepMission } from './world.js';
+import { createRenderer, drawHud } from './view.js';
 
 const canvas = document.getElementById('game');
 const statusLine = document.getElementById('status');
