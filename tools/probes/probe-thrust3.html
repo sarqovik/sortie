@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#101820}canvas{display:block}</style></head>
+<body><canvas id="c" width="1280" height="720"></canvas>
+<script type="module">
+const log=[];
+window.addEventListener('error',e=>log.push('ERR '+e.message));
+try{
+  const { createRenderer } = await import('./src/render.js');
+  const { NOZZLE, bodyToWorld, bodyDirectionToWorld } = await import('./src/aircraftMesh.js');
+  const canvas=document.getElementById('c');
+  const r=createRenderer(canvas);
+  const aircraft={position:{x:0,y:200,z:0},heading:0,pitch:0,roll:0,speed:90,throttle:1.0,gLoad:1,damage:0,fuel:80,verticalSpeed:0,stalled:false};
+  log.push('throttle='+aircraft.throttle+' NOZZLE='+JSON.stringify(NOZZLE));
+  const nw=bodyToWorld([NOZZLE.x,NOZZLE.y,NOZZLE.z],aircraft);
+  log.push('nozzle world='+JSON.stringify(nw));
+  r.render({aircraft,rings:[],nextRing:null,props:[]});
+  const ctx=canvas.getContext('2d');
+  const d=ctx.getImageData(0,0,1280,720).data;
+  // sample a vertical strip through the tail region
+  let found=0, samples=[];
+  for(let y=300;y<520;y+=4){
+    for(let x=600;x<700;x+=2){
+      const i=(y*1280+x)*4,R=d[i],G=d[i+1],B=d[i+2];
+      if(R>200&&G>200&&B>200){found++; if(samples.length<6)samples.push(`(${x},${y}) rgb(${R},${G},${B})`);}
+    }
+  }
+  log.push('bright pixels near tail: '+found);
+  log.push('samples: '+samples.join(' '));
+}catch(e){ log.push('THROW '+e.message+' | '+e.stack.split('\n')[1]); }
+const p=document.createElement('pre');p.id='out';p.textContent=log.join('\n');
+document.body.appendChild(p);
+</script></body></html>

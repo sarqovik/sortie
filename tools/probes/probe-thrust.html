@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#101820}canvas{display:block}</style></head>
+<body><canvas id="c" width="1280" height="720"></canvas>
+<script type="module">
+import { createRenderer } from './src/render.js';
+import { NOZZLE } from './src/aircraftMesh.js';
+const canvas=document.getElementById('c');
+const r=createRenderer(canvas);
+const aircraft={position:{x:0,y:200,z:0},heading:0,pitch:0,roll:0,speed:90,throttle:1.0,gLoad:1,damage:0,fuel:80,verticalSpeed:0,stalled:false};
+r.render({aircraft,rings:[],nextRing:null,props:[]});
+// report the plume's extent by reading back the canvas around the tail
+const ctx=canvas.getContext('2d');
+const img=ctx.getImageData(0,0,1280,720).data;
+let minX=1e9,maxX=-1,minY=1e9,maxY=-1,n=0;
+for(let y=0;y<720;y++)for(let x=0;x<1280;x++){
+  const i=(y*1280+x)*4, R=img[i],G=img[i+1],B=img[i+2];
+  if(R>200&&B>200&&G>170){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; n++; }
+}
+document.title='PLUME w='+(maxX-minX)+' h='+(maxY-minY)+' px='+n;
+const p=document.createElement('pre');p.id='out';
+p.textContent=JSON.stringify({w:maxX-minX,h:maxY-minY,px:n,nozzle:NOZZLE});
+document.body.appendChild(p);
+</script></body></html>

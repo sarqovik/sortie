@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#101820}canvas{display:block}</style></head>
+<body><canvas id="c" width="1280" height="720"></canvas>
+<script type="module">
+const { createRenderer } = await import('./src/render.js');
+const canvas=document.getElementById('c');
+const r=createRenderer(canvas);
+const base={position:{x:0,y:400,z:0},heading:0,pitch:0.08,roll:-12*Math.PI/180,speed:96,throttle:0.72,gLoad:1.3,fuel:30,verticalSpeed:0,stalled:false};
+const cam={back:34,up:6.2,lookDrop:20};
+function shot(damage){
+  canvas.getContext('2d').clearRect(0,0,1280,720);
+  r.render({aircraft:{...base,damage},rings:[],nextRing:null,props:[],camera:cam});
+  const d=canvas.getContext('2d').getImageData(0,0,1280,720).data;
+  const out=new Uint8ClampedArray(d.length); out.set(d);
+  return out;
+}
+const d0=shot(0), d26=shot(26);
+let diff=0, minX=1e9,maxX=-1,minY=1e9,maxY=-1;
+for(let y=0;y<720;y++)for(let x=0;x<1280;x++){
+  const i=(y*1280+x)*4;
+  const dd=Math.abs(d0[i]-d26[i])+Math.abs(d0[i+1]-d26[i+1])+Math.abs(d0[i+2]-d26[i+2]);
+  if(dd>18){diff++; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;}
+}
+// row histogram of the smoke diff
+const rows=new Array(720).fill(0);
+for(let y=0;y<720;y++)for(let x=0;x<1280;x++){
+  const i=(y*1280+x)*4;
+  const dd=Math.abs(d0[i]-d26[i])+Math.abs(d0[i+1]-d26[i+1])+Math.abs(d0[i+2]-d26[i+2]);
+  if(dd>18) rows[y]++;
+}
+const nz=rows.map((v,y)=>[y,v]).filter(([y,v])=>v>0);
+const p=document.createElement('pre');p.id='out';
+p.textContent=JSON.stringify({smokePixels:diff,bbox:diff?[minX,minY,maxX,maxY]:null,rowsWithSmoke:nz.length,firstRows:nz.slice(0,6),peakRow:nz.sort((a,b)=>b[1]-a[1])[0]});
+document.body.appendChild(p);
+</script></body></html>

@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;overflow:hidden}#game{position:fixed;inset:0;width:100%;height:100%;display:block}</style></head>
+<body><canvas id="game"></canvas><p id="status"></p>
+<script type="module" src="./src/main.js"></script>
+<script type="module">
+setTimeout(()=>{
+  const c=document.getElementById('game');
+  const ctx=c.getContext('2d');
+  const d=ctx.getImageData(0,0,Math.min(c.width,200),Math.min(c.height,200)).data;
+  let nonblack=0; for(let i=0;i<d.length;i+=4){ if(d[i]+d[i+1]+d[i+2]>20) nonblack++; }
+  const pre=document.createElement('pre');
+  pre.id='diag';
+  pre.textContent=JSON.stringify({
+    canvasW:c.width, canvasH:c.height,
+    cssW:c.clientWidth, cssH:c.clientHeight,
+    ready:window.__sortieReady===true,
+    status:document.getElementById('status').textContent,
+    nonblackSample:nonblack,
+    sampleTotal:d.length/4
+  });
+  document.body.appendChild(pre);
+},3000);
+</script></body></html>

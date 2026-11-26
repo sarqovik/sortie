@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<script type="module">
+const out=[];
+const { VIEW } = await import('./src/config.js');
+const { PANELS, bodyToWorld } = await import('./src/aircraftMesh.js');
+const { cameraBasis, project } = await import('./src/math3d.js');
+function frameFor(roll,pitch,cam){
+  const ac={position:{x:0,y:200,z:0},heading:0,pitch,roll};
+  const pos={x:0,y:200+cam.up,z:-cam.back};
+  const lift=Math.sin(pitch)*cam.lookAhead*cam.follow;
+  const tgt={x:0,y:200-cam.lookDrop+lift,z:cam.lookAhead};
+  const basis=cameraBasis(pos,tgt,cam.fov,VIEW.width);
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const p of PANELS) for(const v of p.points){
+    const w=bodyToWorld([v[0],v[1],v[2]],ac);
+    const s=project(basis,w,VIEW.width,VIEW.height,0.6);
+    if(!s.visible) continue;
+    if(s.x<minX)minX=s.x; if(s.x>maxX)maxX=s.x;
+    if(s.y<minY)minY=s.y; if(s.y>maxY)maxY=s.y;
+  }
+  return {minX,maxX,minY,maxY};
+}
+const cases=[['bank',-30,0.10],['low',14,0.05],['late',-12,-0.06]];
+out.push('raise lookDrop (camera looks UP less / down more?) -> use negative lookDrop to aim higher');
+out.push('constraint x[40..1240] y[20..600]');
+out.push('');
+for(const [n,rd,pt] of cases){
+  let best=null;
+  for(const back of [30,34,38,42]){
+   for(const up of [4,6.2,8]){
+    for(const lookDrop of [-30,-24,-18,-12,-6,0,1.2]){
+      const cam={back,up,lookAhead:62,lookDrop,follow:0.85,fov:1.02};
+      const r=frameFor(rd*Math.PI/180,pt,cam);
+      if(r.minX>=40&&r.maxX<=1240&&r.minY>=20&&r.maxY<=600){
+        const score=Math.abs(back-30)*0.4+Math.abs(up-6.2)*0.3+Math.abs(lookDrop-1.2)*0.1;
+        if(!best||score<best.score) best={back,up,lookDrop,score,r};
+      }
+    }
+   }
+  }
+  if(best){const r=best.r;
+    out.push(`${n}: back=${best.back} up=${best.up} lookDrop=${best.lookDrop} -> x[${r.minX.toFixed(0)}..${r.maxX.toFixed(0)}] y[${r.minY.toFixed(0)}..${r.maxY.toFixed(0)}] ${(r.maxX-r.minX).toFixed(0)}x${(r.maxY-r.minY).toFixed(0)}`);
+  } else out.push(`${n}: NO SOLUTION`);
+}
+const p=document.createElement('pre');p.id='out';p.textContent=out.join('\n');
+document.body.appendChild(p);
+</script></body></html>

@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<script type="module">
+const log=[];
+const { CAMERA, VIEW } = await import('./src/config.js');
+const { NOZZLE, bodyToWorld, bodyDirectionToWorld } = await import('./src/aircraftMesh.js');
+const { cameraBasis, project } = await import('./src/math3d.js');
+const aircraft={position:{x:0,y:200,z:0},heading:0,pitch:0,roll:0,throttle:1};
+const fwd={x:0,y:0,z:1};
+const camPos={x:0,y:200+CAMERA.up,z:-CAMERA.back};
+const target={x:0,y:200-CAMERA.lookDrop,z:CAMERA.lookAhead};
+const basis=cameraBasis(camPos,target,CAMERA.fov,VIEW.width);
+log.push('camPos='+JSON.stringify(camPos)+' target='+JSON.stringify(target));
+log.push('focal='+basis.focal.toFixed(1));
+const nw=bodyToWorld([NOZZLE.x,NOZZLE.y,NOZZLE.z],aircraft);
+const p=project(basis,nw,VIEW.width,VIEW.height,CAMERA.near);
+log.push('nozzle world='+JSON.stringify(nw));
+log.push('nozzle screen='+JSON.stringify(p));
+const back=bodyDirectionToWorld([0,0,-1],aircraft);
+for(const t of [0,0.25,0.5,0.75,1]){
+  const pt={x:nw.x+back.x*2.4*t,y:nw.y+back.y*2.4*t,z:nw.z+back.z*2.4*t};
+  const pr=project(basis,pt,VIEW.width,VIEW.height,CAMERA.near);
+  log.push('t='+t+' world z='+pt.z.toFixed(2)+' screen=('+pr.x.toFixed(0)+','+pr.y.toFixed(0)+') visible='+pr.visible+' depth='+pr.depth.toFixed(1));
+}
+const pre=document.createElement('pre');pre.id='out';pre.textContent=log.join('\n');
+document.body.appendChild(pre);
+</script></body></html>

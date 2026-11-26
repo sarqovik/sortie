@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#101820}canvas{display:block}</style></head>
+<body><canvas id="c" width="1280" height="720"></canvas>
+<script type="module">
+const { createRenderer } = await import('./src/render.js');
+const canvas=document.getElementById('c');
+const r=createRenderer(canvas);
+const aircraft={position:{x:0,y:200,z:0},heading:0,pitch:0,roll:0,speed:90,throttle:1.0,gLoad:1,damage:0,fuel:80,verticalSpeed:0,stalled:false};
+r.render({aircraft,rings:[],nextRing:null,props:[]});
+const ctx=canvas.getContext('2d');
+const d=ctx.getImageData(0,0,1280,720).data;
+function measure(x0,x1,y0,y1){
+  let minX=1e9,maxX=-1,minY=1e9,maxY=-1,n=0;
+  for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+    const i=(y*1280+x)*4,R=d[i],G=d[i+1],B=d[i+2];
+    // plume: bright and NOT terrain green, NOT aircraft maroon/grey
+    const bright=(R+G+B)>560;
+    const notGreen=!(G>R+12);
+    const notMaroon=!(R>G+40&&R>B+30);
+    if(bright&&notGreen&&notMaroon){ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; n++; }
+  }
+  return n?{w:maxX-minX,h:maxY-minY,px:n,x0:minX,x1:maxX,y0:minY,y1:maxY}:null;
+}
+const m=measure(560,720,540,700);
+const pre=document.createElement('pre');pre.id='out';
+pre.textContent=JSON.stringify(m);
+document.body.appendChild(pre);
+</script></body></html>

@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<script type="module">
+const out=[];
+const { VIEW } = await import('./src/config.js');
+const { PANELS, bodyToWorld } = await import('./src/aircraftMesh.js');
+const { cameraBasis, project } = await import('./src/math3d.js');
+
+// cam: {back, up, lookAhead, lookDrop, follow, fov, panY}  panY shifts BOTH camera and target in world Y
+function frameFor(roll, pitch, cam){
+  const ac={position:{x:0,y:200,z:0},heading:0,pitch,roll};
+  const pos={x:0,y:200+cam.up+cam.panY,z:-cam.back};
+  const lift=Math.sin(pitch)*cam.lookAhead*cam.follow;
+  const tgt={x:0,y:200-cam.lookDrop+lift+cam.panY,z:cam.lookAhead};
+  const basis=cameraBasis(pos,tgt,cam.fov,VIEW.width);
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const p of PANELS) for(const v of p.points){
+    const w=bodyToWorld([v[0],v[1],v[2]],ac);
+    const s=project(basis,w,VIEW.width,VIEW.height,0.6);
+    if(!s.visible) continue;
+    if(s.x<minX)minX=s.x; if(s.x>maxX)maxX=s.x;
+    if(s.y<minY)minY=s.y; if(s.y>maxY)maxY=s.y;
+  }
+  return {minX,maxX,minY,maxY};
+}
+const cases=[['bank',-30,0.10],['low',14,0.05],['late',-12,-0.06]];
+out.push('per-scene camera, fov stays 1.02. panY lifts the whole rig.');
+out.push('constraint: x[40..1240] y[20..600]');
+out.push('');
+for(const [n,rd,pt] of cases){
+  const roll=rd*Math.PI/180;
+  let found=null;
+  for(const back of [30,34,38,42,46]){
+    for(const up of [6.2,8,10,12,14]){
+      for(const panY of [0,4,8,12,16,20,24,28,32]){
+        const cam={back,up,lookAhead:62,lookDrop:1.2,follow:0.85,fov:1.02,panY};
+        const r=frameFor(roll,pt,cam);
+        if(r.minX>=40&&r.maxX<=1240&&r.minY>=20&&r.maxY<=600){
+          const score=Math.abs(back-30)*0.4+Math.abs(up-6.2)*0.3+Math.abs(panY)*0.2;
+          if(!found||score<found.score) found={back,up,panY,score,r};
+        }
+      }
+    }
+  }
+  if(found){
+    const r=found.r;
+    out.push(`${n}: back=${found.back} up=${found.up} panY=${found.panY}  -> x[${r.minX.toFixed(0)}..${r.maxX.toFixed(0)}] y[${r.minY.toFixed(0)}..${r.maxY.toFixed(0)}] ${(r.maxX-r.minX).toFixed(0)}x${(r.maxY-r.minY).toFixed(0)}`);
+  } else out.push(`${n}: NO SOLUTION`);
+}
+const p=document.createElement('pre');p.id='out';p.textContent=out.join('\n');
+document.body.appendChild(p);
+</script></body></html>

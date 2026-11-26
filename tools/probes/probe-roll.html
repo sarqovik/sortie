@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<script type="module">
+const out=[];
+const { createMission } = await import('./src/mission.js');
+const { flyFor } = await import('./src/autopilot.js');
+const { STEP } = await import('./src/config.js');
+const m=createMission(7);
+flyFor(m,46,STEP,{skill:1,stopOn:'rings',stopAt:2});
+const before=m.aircraft.roll;
+m.aircraft.roll=(-30*Math.PI)/180;
+out.push('roll before override = '+(before*180/Math.PI).toFixed(2)+' deg');
+out.push('roll after  override = '+(m.aircraft.roll*180/Math.PI).toFixed(2)+' deg');
+out.push('pitch = '+(m.aircraft.pitch*180/Math.PI).toFixed(2)+' deg, throttle='+m.aircraft.throttle);
+out.push('rings passed = '+m.rings.filter(r=>r.passed).length);
+const p=document.createElement('pre');p.id='out';p.textContent=out.join('\n');
+document.body.appendChild(p);
+</script></body></html>

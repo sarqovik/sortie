@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#101820}canvas{display:block}</style></head>
+<body><canvas id="c" width="1280" height="720"></canvas>
+<script type="module">
+import { PANELS } from './src/aircraftMesh.js';
+const out = { count: PANELS.length, names: PANELS.map(p=>p.name), sample: PANELS[0] };
+document.title = 'N='+PANELS.length;
+window.__p = out;
+const el=document.createElement('pre');
+el.style.cssText='color:#fff;font:12px monospace;position:absolute;top:0;left:0';
+el.textContent = 'panels='+PANELS.length+'\n'+PANELS.map(p=>p.name+' n=('+p.normal.map(v=>v.toFixed(2))+')').join('\n');
+document.body.appendChild(el);
+</script></body></html>

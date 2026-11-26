@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<script type="module">
+const out=[];
+const { CAMERA, VIEW } = await import('./src/config.js');
+const { PANELS, bodyToWorld } = await import('./src/aircraftMesh.js');
+const { cameraBasis, project } = await import('./src/math3d.js');
+
+function frameFor(roll, pitch, back, up, lookAhead, lookDrop, follow){
+  const ac={position:{x:0,y:200,z:0},heading:0,pitch,roll};
+  const fwd={x:0,y:0,z:1};
+  const pos={x:-fwd.x*back,y:200+up,z:-fwd.z*back};
+  const lift=Math.sin(pitch)*lookAhead*follow;
+  const tgt={x:fwd.x*lookAhead,y:200-lookDrop+lift,z:fwd.z*lookAhead};
+  const basis=cameraBasis(pos,tgt,CAMERA.fov,VIEW.width);
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const p of PANELS) for(const v of p.points){
+    const w=bodyToWorld([v[0],v[1],v[2]],ac);
+    const s=project(basis,w,VIEW.width,VIEW.height,CAMERA.near);
+    if(!s.visible) continue;
+    if(s.x<minX)minX=s.x; if(s.x>maxX)maxX=s.x;
+    if(s.y<minY)minY=s.y; if(s.y>maxY)maxY=s.y;
+  }
+  return {minX,maxX,minY,maxY};
+}
+const cases=[['tile2 bank',-30,0.10],['tile3 low',14,0.05],['tile4 late',-12,-0.06]];
+out.push('CURRENT camera: back=30 up=6.2 lookAhead=62 lookDrop=1.2 follow=0.85');
+out.push('frame is 1280x720 -> HUD bottom panels at y=612 and y=662');
+out.push('');
+for(const [n,rollDeg,pitch] of cases){
+  const r=frameFor(rollDeg*Math.PI/180,pitch,30,6.2,62,1.2,0.85);
+  const clipL=r.minX<0, clipR=r.maxX>1280, clipT=r.minY<0, clipB=r.maxY>720;
+  out.push(`${n}: x[${r.minX.toFixed(0)}..${r.maxX.toFixed(0)}] y[${r.minY.toFixed(0)}..${r.maxY.toFixed(0)}] w=${(r.maxX-r.minX).toFixed(0)} h=${(r.maxY-r.minY).toFixed(0)}`);
+  out.push(`   clipped: L=${clipL} R=${clipR} T=${clipT} B=${clipB}`);
+}
+const p=document.createElement('pre');p.id='out';p.textContent=out.join('\n');
+document.body.appendChild(p);
+</script></body></html>

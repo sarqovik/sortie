@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<script type="module">
+const out=[];
+try{
+  const { createMission, PHASE } = await import('./src/mission.js');
+  const { flyFor } = await import('./src/autopilot.js');
+  const { AIRCRAFT, STEP, WORLD } = await import('./src/config.js');
+  const { groundHeight } = await import('./src/terrain.js');
+  const seed=7;
+  function make(){ return createMission(seed); }
+
+  // tile 1
+  let m=make();
+  m.aircraft.position.z=-WORLD.runwayLength/2-40; m.aircraft.position.y=4; m.aircraft.heading=0;
+  m.aircraft.speed=78; m.aircraft.throttle=0.85; m.aircraft.fuel=AIRCRAFT.tank; m.aircraft.damage=0;
+  out.push(`tile1 fuel=${(m.aircraft.fuel/AIRCRAFT.tank*100).toFixed(0)}% damage=${m.aircraft.damage}% agl=${m.aircraft.position.y.toFixed(0)}m`);
+
+  // tile 2
+  m=make(); flyFor(m,46,STEP,{skill:1,stopOn:'rings',stopAt:2});
+  out.push(`tile2 pre-roll=${(m.aircraft.roll*180/Math.PI).toFixed(1)}deg`);
+
+  // tile 3
+  m=make(); flyFor(m,62,STEP,{skill:1.05,stopOn:'rings',stopAt:3});
+  const g=groundHeight(m.aircraft.position.x,m.aircraft.position.z);
+  out.push(`tile3 ground=${g.toFixed(1)}m setY=${(g+52).toFixed(1)} => agl=52m speed=132`);
+
+  // tile 4
+  m=make(); flyFor(m,96,STEP,{skill:1.1,stopOn:'rings',stopAt:5});
+  out.push(`tile4 rings=${m.rings.filter(r=>r.passed).length} elapsed=${m.elapsed.toFixed(0)}s`);
+}catch(e){ out.push('ERR '+e.message); }
+const p=document.createElement('pre');p.id='out';p.textContent=out.join('\n');
+document.body.appendChild(p);
+</script></body></html>
